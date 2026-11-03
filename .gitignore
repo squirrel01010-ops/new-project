@@ -1,0 +1,4 @@
+preview*.png
+qa-*.png
+qa-output/
+*.tar.gz

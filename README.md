@@ -24,4 +24,4 @@ Official artwork sources: HoYoverse character website covers and genshin-db/Enka
 
 Browser checks cover all 218 render/export-safe asset sets, including blank-signature characters, character selection, lore scenery, quote line breaks, signature equipment controls, hologram intensity and persistence, collection save/reload, PNG dimensions, offline HTML interaction, and mobile layouts at 390px and 320px.
 
-All 218 presets use the portrait-led front layout, with alpha-bound framing, game-specific crop scales and per-character focus corrections. Card and application typography uses locally bundled Pretendard Variable (SIL OFL); exports rasterize that typography.
+All 218 presets use the portrait-led front layout, with alpha-bound framing, game-specific crop scales and per-character focus corrections. Card and application typography uses locally bundled NanumSquareRound in regular, bold and extra-bold weights (SIL OFL); exports rasterize that typography.

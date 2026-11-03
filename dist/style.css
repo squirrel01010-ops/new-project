@@ -17,3 +17,5 @@
 .game-count{display:inline-block;margin-left:5px;font-size:9px;opacity:.6;font-variant-numeric:tabular-nums}.game-switch button{white-space:nowrap}#applySignature:disabled{opacity:.4;cursor:default}@media(max-width:420px){.game-count{margin-left:3px;font-size:8px}}
 
 body{font-weight:400;letter-spacing:-.015em}h1,h2,h3,.wordmark{font-weight:650;letter-spacing:-.035em}.character-option b{font-weight:600;letter-spacing:-.025em}.button,.game-switch button{font-weight:550}.brand-light{font-weight:450;letter-spacing:.08em}input,textarea{font-weight:450;line-height:1.6}.field-note,.catalog-note{line-height:1.7}
+
+select{font:inherit;color:#e7e0d3;background:#171d29;border:1px solid #ffffff26;border-radius:7px;padding:12px;width:100%;margin-top:8px}select:focus-visible{outline:2px solid var(--gold)}

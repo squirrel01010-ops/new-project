@@ -64,6 +64,15 @@ const store = {
 };
 
 let settings = { ...DEFAULT_SETTINGS, ...store.get('dc.settings', {}) };
+
+// 주소 끝에 #key=sk_... 를 붙여 열면 키를 이 브라우저에 저장하고, 주소창에서는 바로 지워요.
+(() => {
+  const m = location.hash.match(/(?:^#|&)key=(sk_[A-Za-z0-9_-]+)/);
+  if (!m) return;
+  settings = { ...settings, engine: 'pollinations', pollKey: m[1] };
+  store.set('dc.settings', settings);
+  history.replaceState(null, '', location.pathname + location.search);
+})();
 let draft = { style: 'anime', ratio: '2:3', model: '', count: 4, ...store.get('dc.draft', {}) };
 
 const db = (() => {

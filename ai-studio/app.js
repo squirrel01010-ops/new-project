@@ -2,6 +2,7 @@
 
 const POLL_BASE = 'https://gen.pollinations.ai';
 const FALLBACK_POLL_MODELS = [
+  { id: 'microsoft/mai-image-2.6', title: 'MAI Image 2.6' },
   { id: 'zimage', title: 'Z-Image Turbo' },
   { id: 'flux', title: 'FLUX.1 Schnell' },
   { id: 'klein', title: 'FLUX.2 Klein 4B' },
@@ -67,14 +68,23 @@ const store = {
 let settings = { ...DEFAULT_SETTINGS, ...store.get('dc.settings', {}) };
 
 // 주소 끝에 #key=sk_... 를 붙여 열면 키를 이 브라우저에 저장하고, 주소창에서는 바로 지워요.
-(() => {
+function importKeyFromHash() {
   const m = location.hash.match(/(?:^#|&)key=(sk_[A-Za-z0-9_-]+)/);
-  if (!m) return;
+  if (!m) return false;
   settings = { ...settings, engine: 'pollinations', pollKey: m[1] };
   store.set('dc.settings', settings);
   history.replaceState(null, '', location.pathname + location.search);
-})();
-let draft = { style: 'anime', ratio: '2:3', model: '', count: 4, ...store.get('dc.draft', {}) };
+  return true;
+}
+importKeyFromHash();
+const PREFERRED_POLL_MODEL = 'microsoft/mai-image-2.6';
+let draft = { style: 'game', ratio: '2:3', model: PREFERRED_POLL_MODEL, count: 4, ...store.get('dc.draft', {}) };
+// 기본 모델을 MAI Image 2.6으로 바꾼 업데이트: 예전 기본값을 쓰던 사람도 한 번 옮겨 줘요.
+if (!draft.defaultsV2) {
+  draft.defaultsV2 = true;
+  if (!draft.model || draft.model === 'tongyi-mai/z-image-turbo' || draft.model === 'zimage') draft.model = PREFERRED_POLL_MODEL;
+  store.set('dc.draft', draft);
+}
 
 const db = (() => {
   let dbp;
@@ -117,7 +127,7 @@ const engines = {
         !(m.output_modalities || []).includes('video') &&
         m.health?.status !== 'down' &&
         (settings.showPaid || !m.paid_only));
-      usable.sort((a, b) => Number(!!a.community) - Number(!!b.community) || Number(!!a.paid_only) - Number(!!b.paid_only));
+      usable.sort((a, b) => Number(b.name === PREFERRED_POLL_MODEL) - Number(a.name === PREFERRED_POLL_MODEL) || Number(!!a.community) - Number(!!b.community) || Number(!!a.paid_only) - Number(!!b.paid_only));
       return usable.map((m) => ({
         id: m.name,
         aliases: m.aliases || [],
@@ -262,7 +272,8 @@ async function loadModels() {
   els.model.replaceChildren(...list.map((m) => new Option(m.title, m.id)));
   const saved = draft.model;
   const match = list.find((m) => m.id === saved || (m.aliases || []).includes(saved));
-  els.model.value = match ? match.id : list[0].id;
+  const preferred = list.find((m) => m.id === PREFERRED_POLL_MODEL);
+  els.model.value = match ? match.id : (preferred || list[0]).id;
 }
 
 function setStatus(msg, isError = false) {
@@ -333,25 +344,33 @@ async function generate() {
 
   let ok = 0;
   let lastError = '';
-  // 무료 한도를 아끼고 속도 제한을 피하려고 한 장씩 차례대로 요청해요.
-  for (let i = 0; i < count; i++) {
-    const seed = baseSeed == null ? randomSeed() : baseSeed + i;
-    try {
-      const blob = await engines[job.engine].generate({ ...job, seed });
-      const item = { ...job, id: crypto.randomUUID(), seed, blob, createdAt: Date.now() };
-      await db.put(item).catch(() => {});
-      tiles[i].replaceWith(makeTile(item));
-      ok++;
-    } catch (e) {
-      lastError = e instanceof GenError ? e.message : `네트워크 오류: ${e.message}`;
-      tiles[i].className = 'tile failed';
-      tiles[i].querySelector('.tile-msg').textContent = lastError;
-      if (e instanceof GenError && /키|잔액|연결/.test(lastError)) {
-        for (let j = i + 1; j < count; j++) tiles[j].remove();
-        break;
+  // Pollinations는 2장씩 동시에, 내 PC는 그래픽카드 하나라 1장씩 차례로 그려요.
+  const parallel = job.engine === 'pollinations' ? 2 : 1;
+  let next = 0;
+  let stopped = false;
+  const worker = async () => {
+    while (!stopped && next < count) {
+      const i = next++;
+      const seed = baseSeed == null ? randomSeed() : baseSeed + i;
+      try {
+        const blob = await engines[job.engine].generate({ ...job, seed });
+        const item = { ...job, id: crypto.randomUUID(), seed, blob, createdAt: Date.now() + i };
+        await db.put(item).catch(() => {});
+        tiles[i].replaceWith(makeTile(item));
+        ok++;
+      } catch (e) {
+        lastError = e instanceof GenError ? e.message : `네트워크 오류: ${e.message}`;
+        tiles[i].className = 'tile failed';
+        tiles[i].querySelector('.tile-msg').textContent = lastError;
+        if (e instanceof GenError && /키|잔액|연결/.test(lastError)) {
+          stopped = true;
+          for (let j = next; j < count; j++) tiles[j].remove();
+          next = count;
+        }
       }
     }
-  }
+  };
+  await Promise.all(Array.from({ length: Math.min(parallel, count) }, worker));
 
   busy = false;
   els.generate.disabled = false;
@@ -550,6 +569,14 @@ els.testLocal.addEventListener('click', async () => {
 });
 
 /* ---------- 시작 ---------- */
+
+// 이미 열린 탭에 키 링크를 붙여 넣은 경우에도 받아 줘요.
+window.addEventListener('hashchange', () => {
+  if (!importKeyFromHash()) return;
+  updateEngineUi();
+  loadModels();
+  setStatus('API 키를 저장했어요. 바로 그릴 수 있어요.');
+});
 
 renderControls();
 loadModels();

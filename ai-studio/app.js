@@ -10,6 +10,7 @@ const FALLBACK_POLL_MODELS = [
 const STYLES = [
   { id: 'none', label: '그대로', tags: '' },
   { id: 'anime', label: '애니메', tags: 'anime style, cel shading, vibrant colors, detailed eyes, clean lineart, masterpiece, best quality' },
+  { id: 'game', label: '게임 캐릭터', tags: 'gacha game character art, official art style, detailed fantasy outfit, intricate accessories, dynamic pose, anime coloring, soft rim lighting, highly detailed, masterpiece, best quality, no text, no watermark' },
   { id: 'illust', label: '일러스트', tags: 'digital illustration, soft lighting, painterly, highly detailed, artstation' },
   { id: 'watercolor', label: '수채화', tags: 'watercolor painting, soft pastel palette, paper texture, delicate brush strokes' },
   { id: 'pixel', label: '픽셀아트', tags: 'pixel art, 16-bit, crisp pixels, limited palette' },

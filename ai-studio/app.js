@@ -413,7 +413,10 @@ function openViewer(item) {
 
 function download(item) {
   const ext = item.blob.type.includes('png') ? 'png' : item.blob.type.includes('webp') ? 'webp' : 'jpg';
-  const slug = item.userPrompt.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 40) || 'image';
+  // 한글 파일명은 일부 브라우저에서 'download'로 바뀌어서 영문/숫자만 남겨요.
+  const d = new Date(item.createdAt);
+  const pad = (n) => String(n).padStart(2, '0');
+  const slug = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
   const a = document.createElement('a');
   a.href = urlFor(item);
   a.download = `dreamcanvas_${slug}_${item.seed}.${ext}`;
